@@ -36,6 +36,8 @@ namespace controller
         "/localization/kinematic_state", 1, [this](const Odometry::SharedPtr msg)
         { odometry_ = msg; });
 
+    trajectory_msg_ = std::make_shared<autoware_auto_planning_msgs::msg::Trajectory>();
+    prepareTrajectory();
     using namespace std::literals::chrono_literals;
     timer_ = rclcpp::create_timer(
         this, get_clock(), 30ms, std::bind(&Controller::onTimer, this));
@@ -62,46 +64,10 @@ namespace controller
     pub_cmd_->publish(control_cmd);
     */
 
-    std::filesystem::path current_path = std::filesystem::current_path();
-    std::string local_path = "/src/control_task/controller_task_node/config/waypoints.txt";
-    std::string waypoint_path = current_path.string() + local_path;
-    std::vector<std::array<double, 8>> trajectory_points;
-    std::ifstream file(waypoint_path.c_str());
-    if (file.is_open())
-    {
-        double values[8];
-        while (file >> values[0] >> values[1] >> values[2] >> values[3] >> values[4] >> values[5] >> values[6] >> values[7])
-        {
-            std::array<double, 8> point;
-            for (int i = 0; i < 8; i++)
-            {
-                point[i] = values[i];
-            }
-            trajectory_points.push_back(point);
-        }
-    file.close();
-    }else{
-        RCLCPP_ERROR(this->get_logger(), "Dosya açılamadı.");
-    }
     
-    autoware_auto_planning_msgs::msg::Trajectory trajectory_msg;
-    autoware_auto_planning_msgs::msg::TrajectoryPoint trajectory_point;
-    int k = trajectory_points.size();
-    for (int i = 0; i < k; i++)
-    {
-        trajectory_point.pose.position.x = trajectory_points[i][0];
-        trajectory_point.pose.position.y = trajectory_points[i][1];
-        trajectory_point.pose.position.z = trajectory_points[i][2];
-        trajectory_point.pose.orientation.x = trajectory_points[i][3];
-        trajectory_point.pose.orientation.y = trajectory_points[i][4];
-        trajectory_point.pose.orientation.z = trajectory_points[i][5];
-        trajectory_point.pose.orientation.w = trajectory_points[i][6];
-        trajectory_point.longitudinal_velocity_mps = trajectory_points[i][7];
-        trajectory_msg.points.push_back(trajectory_point);
-    }
-    trajectory_msg.header.stamp = this->now();
-    trajectory_msg.header.frame_id = "map";
-    pub_trajectory_->publish(trajectory_msg);
+    //Yol noktaları publish ediliyor.
+    trajectory_msg_->header.stamp = this->now();
+    pub_trajectory_->publish(*trajectory_msg_);
   }
 
   double Controller::calcSteerCmd()
@@ -122,6 +88,46 @@ namespace controller
     double lateral_deviation = 0.0;
     // Calculate the lateral deviation here.
     return lateral_deviation;
+  }
+
+  void Controller::prepareTrajectory()
+  {
+    std::filesystem::path current_path = std::filesystem::current_path();
+    std::string local_path = "/src/control_task/controller_task_node/config/waypoints.txt";
+    std::string waypoint_path = current_path.string() + local_path;
+    std::vector<std::array<double, 8>> trajectory_points;
+    std::ifstream file(waypoint_path.c_str());
+    if (file.is_open())
+    {
+        double values[8];
+        while (file >> values[0] >> values[1] >> values[2] >> values[3] >> values[4] >> values[5] >> values[6] >> values[7])
+        {
+            std::array<double, 8> point;
+            for (int i = 0; i < 8; i++)
+            {
+                point[i] = values[i];
+            }
+            trajectory_points.push_back(point);
+        }
+      file.close();
+      autoware_auto_planning_msgs::msg::TrajectoryPoint trajectory_point;
+      int k = trajectory_points.size();
+      for (int i = 0; i < k; i++)
+      {
+          trajectory_point.pose.position.x = trajectory_points[i][0];
+          trajectory_point.pose.position.y = trajectory_points[i][1];
+          trajectory_point.pose.position.z = trajectory_points[i][2];
+          trajectory_point.pose.orientation.x = trajectory_points[i][3];
+          trajectory_point.pose.orientation.y = trajectory_points[i][4];
+          trajectory_point.pose.orientation.z = trajectory_points[i][5];
+          trajectory_point.pose.orientation.w = trajectory_points[i][6];
+          trajectory_point.longitudinal_velocity_mps = trajectory_points[i][7];
+          trajectory_msg_->points.push_back(trajectory_point);
+      }
+      trajectory_msg_->header.frame_id = "map";
+    }else{
+        RCLCPP_ERROR(this->get_logger(), "Dosya açılamadı.");
+    }
   }
 
 } // namespace controller

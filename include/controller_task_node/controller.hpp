@@ -42,6 +42,7 @@ namespace controller
   public:
     explicit Controller(const rclcpp::NodeOptions &options);
     ~Controller() = default;
+    void prepareTrajectory();
 
   private:
     rclcpp::Subscription<Odometry>::SharedPtr sub_kinematics_;
@@ -50,6 +51,8 @@ namespace controller
     rclcpp::Publisher<autoware_auto_vehicle_msgs::msg::GearCommand>::SharedPtr pub_gear_cmd_;
     rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr pub_lateral_deviation_;
     rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr pub_longitudinal_velocity_error_;
+
+    autoware_auto_planning_msgs::msg::Trajectory::SharedPtr trajectory_msg_;
 
     rclcpp::TimerBase::SharedPtr timer_;
     Odometry::SharedPtr odometry_;
