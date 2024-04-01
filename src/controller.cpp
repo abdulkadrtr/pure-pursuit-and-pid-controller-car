@@ -20,6 +20,7 @@
 #include <iostream>
 #include <fstream>
 #include <filesystem>
+
 namespace controller
 {
 
@@ -64,7 +65,14 @@ namespace controller
     pub_cmd_->publish(control_cmd);
     */
 
+    //odometr_ bilgisini yazdır.
+    if (odometry_ != nullptr)
+    {
+      std::cout << "Odometry: " << odometry_->pose.pose.position.x << " " << odometry_->pose.pose.position.y << std::endl;
+    }
+    //aracın yönünü yazdır.
     
+
     //Yol noktaları publish ediliyor.
     trajectory_msg_->header.stamp = this->now();
     pub_trajectory_->publish(*trajectory_msg_);

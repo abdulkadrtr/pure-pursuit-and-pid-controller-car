@@ -43,6 +43,7 @@ namespace controller
     explicit Controller(const rclcpp::NodeOptions &options);
     ~Controller() = default;
     void prepareTrajectory();
+    double getYawFromOdometry(const nav_msgs::msg::Odometry::SharedPtr odometry);
 
   private:
     rclcpp::Subscription<Odometry>::SharedPtr sub_kinematics_;
@@ -57,6 +58,7 @@ namespace controller
     rclcpp::TimerBase::SharedPtr timer_;
     Odometry::SharedPtr odometry_;
 
+    
     void onTimer();
     double calcSteerCmd();
     double calcAccCmd();
