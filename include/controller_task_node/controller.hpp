@@ -64,6 +64,9 @@ namespace controller
     autoware_auto_planning_msgs::msg::Trajectory::SharedPtr trajectory_msg_;
     autoware_auto_control_msgs::msg::AckermannControlCommand control_cmd;
 
+    std_msgs::msg::Float64 lateral_deviation_msg;
+    std_msgs::msg::Float64 longitudinal_velocity_error_msg;
+
     rclcpp::TimerBase::SharedPtr timer_;
     Odometry::SharedPtr odometry_;
 
@@ -74,11 +77,10 @@ namespace controller
     double target_speed;
     double longitudinal_velocity_error;
     double lateral_deviation;
-
-    std_msgs::msg::Float64 lateral_deviation_msg;
-    std_msgs::msg::Float64 longitudinal_velocity_error_msg;
     double steerCmd;
     double accCmd;
+
+
     
     void onTimer();
     double calcSteerCmd();
