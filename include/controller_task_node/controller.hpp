@@ -25,7 +25,16 @@
 #include <geometry_msgs/msg/twist.hpp>
 #include <nav_msgs/msg/odometry.hpp>
 #include <std_msgs/msg/float64.hpp>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
+#include <algorithm>
+#include <vector>
+#include <array>
+#include <iostream>
+#include <fstream>
+#include <filesystem>
+#include <cmath>
+#include <limits>
 #include <memory>
 
 namespace controller
@@ -42,7 +51,7 @@ namespace controller
   public:
     explicit Controller(const rclcpp::NodeOptions &options);
     ~Controller() = default;
-    void prepareTrajectory();
+    
 
   private:
     rclcpp::Subscription<Odometry>::SharedPtr sub_kinematics_;
@@ -53,15 +62,30 @@ namespace controller
     rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr pub_longitudinal_velocity_error_;
 
     autoware_auto_planning_msgs::msg::Trajectory::SharedPtr trajectory_msg_;
+    autoware_auto_control_msgs::msg::AckermannControlCommand control_cmd;
 
     rclcpp::TimerBase::SharedPtr timer_;
     Odometry::SharedPtr odometry_;
 
+    std::vector<std::array<double, 8>> trajectory_points;
+    
+    size_t closest_point_index = 0;
+    double look_head_distance = 2.0;
+    double target_speed;
+    double longitudinal_velocity_error;
+    double lateral_deviation;
+
+    std_msgs::msg::Float64 lateral_deviation_msg;
+    std_msgs::msg::Float64 longitudinal_velocity_error_msg;
+    double steerCmd;
+    double accCmd;
     
     void onTimer();
     double calcSteerCmd();
     double calcAccCmd();
     double calcLateralDeviation();
+    double calcLongitudinalVelocityError();
+    void prepareTrajectory();
   };
 
 } // namespace controller
