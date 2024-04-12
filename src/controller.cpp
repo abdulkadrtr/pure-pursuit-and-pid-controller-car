@@ -168,6 +168,7 @@ namespace controller
     double longitudinal_velocity_error = 0.0;
     // Calculate the longitudinal velocity error here.
     longitudinal_velocity_error = target_speed - odometry_->twist.twist.linear.x; // Hesaplanan longitudinal velocity error
+    longitudinal_velocity_error = std::abs(longitudinal_velocity_error);
     return longitudinal_velocity_error;
   }
 
