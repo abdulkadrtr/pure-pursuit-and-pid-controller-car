@@ -13,4 +13,4 @@ A `config.xml` file has been created for the PlotJuggler tool. This file can be 
 
 ## Demo Video
 
-https://youtu.be/O1JgbL-Oa1c
+https://youtu.be/3otRQPP6m70
