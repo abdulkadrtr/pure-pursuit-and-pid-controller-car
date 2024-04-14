@@ -32,7 +32,7 @@ namespace controller
     sub_kinematics_ = create_subscription<Odometry>("/localization/kinematic_state", 1, [this](const Odometry::SharedPtr msg){ odometry_ = msg; });
     trajectory_msg_ = std::make_shared<autoware_auto_planning_msgs::msg::Trajectory>();
  
-    prepareTrajectory(); // Trajectory dosyasını oku ve hazırla
+    prepareTrajectory(); // Trajectory dosyasını oku
 
     using namespace std::literals::chrono_literals;
     timer_ = rclcpp::create_timer(
@@ -69,6 +69,7 @@ namespace controller
     pub_longitudinal_velocity_error_->publish(longitudinal_velocity_error_msg); // Longitudinal velocity error mesajını yayınla
     
     trajectory_msg_->header.stamp = this->now();
+    createTrajectory(); // Trajectory mesajını oluştur
     pub_trajectory_->publish(*trajectory_msg_); // Trajectory mesajını yayınla
   }
 
@@ -190,25 +191,39 @@ namespace controller
             trajectory_points.push_back(point);
         }
       file.close();
-      autoware_auto_planning_msgs::msg::TrajectoryPoint trajectory_point;
-      int k = trajectory_points.size();
-      for (int i = 0; i < k; i++)
-      {
-          trajectory_point.pose.position.x = trajectory_points[i][0];
-          trajectory_point.pose.position.y = trajectory_points[i][1];
-          trajectory_point.pose.position.z = trajectory_points[i][2];
-          trajectory_point.pose.orientation.x = trajectory_points[i][3];
-          trajectory_point.pose.orientation.y = trajectory_points[i][4];
-          trajectory_point.pose.orientation.z = trajectory_points[i][5];
-          trajectory_point.pose.orientation.w = trajectory_points[i][6];
-          trajectory_point.longitudinal_velocity_mps = trajectory_points[i][7];
-          trajectory_msg_->points.push_back(trajectory_point);
-      }
-      trajectory_msg_->header.frame_id = "map";
     }else{
         RCLCPP_ERROR(this->get_logger(), "Dosya açılamadı.");
     }
   }
+  
+  void Controller::createTrajectory()
+  {
+    autoware_auto_planning_msgs::msg::TrajectoryPoint trajectory_point;
+    trajectory_msg_->points.clear();
+    int k = trajectory_points.size();
+    int size = 0;
+    int location = static_cast<int>(closest_point_index);
+    int look_distance = 50; // Path on gosterim mesafesi
+    if(location+look_distance>k){
+      size = k;
+    }else{
+      size = location+look_distance;
+    }
+    for (int i = location; i < size; i++)
+    {
+        trajectory_point.pose.position.x = trajectory_points[i][0];
+        trajectory_point.pose.position.y = trajectory_points[i][1];
+        trajectory_point.pose.position.z = trajectory_points[i][2];
+        trajectory_point.pose.orientation.x = trajectory_points[i][3];
+        trajectory_point.pose.orientation.y = trajectory_points[i][4];
+        trajectory_point.pose.orientation.z = trajectory_points[i][5];
+        trajectory_point.pose.orientation.w = trajectory_points[i][6];
+        trajectory_point.longitudinal_velocity_mps = trajectory_points[i][7];
+        trajectory_msg_->points.push_back(trajectory_point);
+    }
+    trajectory_msg_->header.frame_id = "map";
+  }
+
 
 } // namespace controller
 

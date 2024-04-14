@@ -87,7 +87,8 @@ namespace controller
     double calcAccCmd();
     double calcLateralDeviation();
     double calcLongitudinalVelocityError();
-    void prepareTrajectory();
+    void prepareTrajectory(); // Trajectory dosyasını oku ve hazırla
+    void createTrajectory(); // Trajectory mesajını oluştur
   };
 
 } // namespace controller
