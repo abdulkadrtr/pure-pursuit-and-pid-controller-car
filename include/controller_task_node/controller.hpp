@@ -62,10 +62,6 @@ namespace controller
     rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr pub_longitudinal_velocity_error_;
 
     autoware_auto_planning_msgs::msg::Trajectory::SharedPtr trajectory_msg_;
-    autoware_auto_control_msgs::msg::AckermannControlCommand control_cmd;
-
-    std_msgs::msg::Float64 lateral_deviation_msg;
-    std_msgs::msg::Float64 longitudinal_velocity_error_msg;
 
     rclcpp::TimerBase::SharedPtr timer_;
     Odometry::SharedPtr odometry_;
@@ -73,14 +69,8 @@ namespace controller
     std::vector<std::array<double, 8>> trajectory_points;
     
     size_t closest_point_index = 0;
-    double look_head_distance = 2.0;
+    double look_head_distance = 1.8; 
     double target_speed;
-    double longitudinal_velocity_error;
-    double lateral_deviation;
-    double steerCmd;
-    double accCmd;
-
-
     
     void onTimer();
     double calcSteerCmd();

@@ -50,23 +50,25 @@ namespace controller
     pub_gear_cmd_->publish(gear_cmd);
 
     // Calculate the control command and error values.
-
+    autoware_auto_control_msgs::msg::AckermannControlCommand control_cmd;
     control_cmd.stamp = this->now();
-    steerCmd = calcSteerCmd(); // Araç için hesaplanan direksiyon açısı
-    accCmd = calcAccCmd(); // Araç için hesaplanan ivme
-
+    double steerCmd = calcSteerCmd(); // Araç için hesaplanan direksiyon açısı
+    double accCmd = calcAccCmd(); // Araç için hesaplanan ivme
     control_cmd.longitudinal.acceleration = accCmd;
     control_cmd.lateral.steering_tire_angle = steerCmd;
     pub_cmd_->publish(control_cmd); // Hesaplanan kontrol komutlarını yayınla
 
-    
-    lateral_deviation = calcLateralDeviation(); // Araç için hesaplanan lateral deviation
+    std_msgs::msg::Float64 lateral_deviation_msg;
+    double lateral_deviation = calcLateralDeviation(); // Araç için hesaplanan lateral deviation
     lateral_deviation_msg.data = lateral_deviation;
     pub_lateral_deviation_->publish(lateral_deviation_msg); // Lateral deviation mesajını yayınla
-
-    longitudinal_velocity_error = calcLongitudinalVelocityError(); // Araç için hesaplanan longitudinal velocity error
+    
+    
+    std_msgs::msg::Float64 longitudinal_velocity_error_msg;
+    double longitudinal_velocity_error = calcLongitudinalVelocityError(); // Araç için hesaplanan longitudinal velocity error
     longitudinal_velocity_error_msg.data = longitudinal_velocity_error;
     pub_longitudinal_velocity_error_->publish(longitudinal_velocity_error_msg); // Longitudinal velocity error mesajını yayınla
+    
     
     trajectory_msg_->header.stamp = this->now();
     createTrajectory(); // Trajectory mesajını oluştur
@@ -76,10 +78,8 @@ namespace controller
   double Controller::calcSteerCmd()
   {
     double steer = 0.0;
-    
     // Calculate the steering angle here.
-    if (odometry_ != nullptr)
-    {
+    if (odometry_ != nullptr){
       tf2::Quaternion q(
           odometry_->pose.pose.orientation.x,
           odometry_->pose.pose.orientation.y,
@@ -89,40 +89,43 @@ namespace controller
       double roll, pitch, yaw;
       m.getRPY(roll, pitch, yaw);
       steer = yaw;
-    }
-    double min_distance = std::numeric_limits<double>::max();
-    size_t k = trajectory_points.size();
-    for (size_t i = closest_point_index; i < k; i++)
-    {
-      double distance = sqrt(pow(trajectory_points[i][0] - odometry_->pose.pose.position.x, 2) + pow(trajectory_points[i][1] - odometry_->pose.pose.position.y, 2));
-      if (distance < min_distance)
+
+      double min_distance = std::numeric_limits<double>::max();
+      size_t k = trajectory_points.size();
+      for (size_t i = closest_point_index; i < k; i++)
       {
-        min_distance = distance;
-        closest_point_index = i;
+        double distance = sqrt(pow(trajectory_points[i][0] - odometry_->pose.pose.position.x, 2) + pow(trajectory_points[i][1] - odometry_->pose.pose.position.y, 2));
+        if (distance < min_distance)
+        {
+          min_distance = distance;
+          closest_point_index = i;
+        }
       }
+      size_t look_head_index = closest_point_index;
+      while(look_head_index < k-1 &&
+            std::hypot(trajectory_points[look_head_index][0] - odometry_->pose.pose.position.x, trajectory_points[look_head_index][1] - odometry_->pose.pose.position.y) < look_head_distance){
+        ++look_head_index;
+      }if(look_head_index == k-1){ //Hedef nokta son nokta ise
+        target_speed = 0.0;
+        steer = 0.0;
+      }else{ //Hedef nokta son nokta degilse
+        double target_x = trajectory_points[look_head_index][0];
+        double target_y = trajectory_points[look_head_index][1];
+        double dx = target_x - odometry_->pose.pose.position.x;
+        double dy = target_y - odometry_->pose.pose.position.y;
+        double target_yaw = atan2(dy, dx);
+        double delta_yaw = target_yaw - steer;
+
+        while (delta_yaw > M_PI){delta_yaw -= 2 * M_PI;}
+        while (delta_yaw < -M_PI){delta_yaw += 2 * M_PI;}
+
+        steer = delta_yaw;
+        target_speed = trajectory_points[look_head_index][7];
+        look_head_distance = target_speed * 1.4; //Dinamik look_head_distance mesafesi
+      }      
+    }else{
+      RCLCPP_ERROR(this->get_logger(), "Odometry bilgisi alınamadı.");
     }
-    size_t look_head_index = closest_point_index;
-    while(look_head_index < k-1 &&
-          std::hypot(trajectory_points[look_head_index][0] - odometry_->pose.pose.position.x, trajectory_points[look_head_index][1] - odometry_->pose.pose.position.y) < look_head_distance){
-      ++look_head_index;
-    }if(look_head_index == k-1){ //Hedef nokta son nokta ise
-      target_speed = 0.0;
-      steer = 0.0;
-    }else{ //Hedef nokta son nokta degilse
-      double target_x = trajectory_points[look_head_index][0];
-      double target_y = trajectory_points[look_head_index][1];
-      double dx = target_x - odometry_->pose.pose.position.x;
-      double dy = target_y - odometry_->pose.pose.position.y;
-      double target_yaw = atan2(dy, dx);
-      double delta_yaw = target_yaw - steer;
-
-      while (delta_yaw > M_PI){delta_yaw -= 2 * M_PI;}
-      while (delta_yaw < -M_PI){delta_yaw += 2 * M_PI;}
-
-      steer = delta_yaw;
-      target_speed = trajectory_points[look_head_index][7];
-      look_head_distance = target_speed * 1.4; //Dinamik look_head_distance mesafesi
-    }    
     return steer;
   }
 
