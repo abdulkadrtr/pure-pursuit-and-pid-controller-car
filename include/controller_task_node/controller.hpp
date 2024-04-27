@@ -69,7 +69,7 @@ namespace controller
     std::vector<std::array<double, 8>> trajectory_points;
     
     size_t closest_point_index = 0;
-    double look_head_distance = 1.8; 
+    double look_head_distance = 2.0; 
     double target_speed;
     
     void onTimer();
