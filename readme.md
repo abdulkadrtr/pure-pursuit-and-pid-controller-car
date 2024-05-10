@@ -1,4 +1,4 @@
-## Pure Pursuit Controller
+## Pure Pursuit and PID Controller
 The vehicle follows the path using the **Pure Pursuit** algorithm. This algorithm first calculates the point in the `path_array` that is closest to the vehicle's position. Then, it selects the first point at a `look_head_distance` from the current position index as the target. The steering angle is then calculated based on the current vehicle orientation (yaw) and the angle between the two points.
 
 The `look_head_distance` variable dynamically changes with speed. In other words, as the vehicle speeds up, the `look_head_distance` increases. The formula used is `look_head_distance = target_speed * K`, where `K` is a coefficient chosen as `K = 1.4`.
